@@ -1,0 +1,9 @@
+Requirement,Implementation,Evidence
+FR-01,train_model.py deduplicate(),outputs/deduplication_log.csv
+FR-02,rule_predict + LogisticRegression + RandomForest,outputs/model_comparison.csv
+FR-03,GroupShuffleSplit on campaign_group,outputs/data_split_summary.json and heldout_campaign_test.csv
+FR-04,app.py probability thresholds and explain(),browser result panel
+FR-05,metrics false_positive_rate and controlled perturbations,outputs/model_comparison.csv and robustness_tests.csv
+NFR-01,no URL fetching or execution,source review and threat model
+NFR-02,synthetic-only corpus and no scan persistence,source manifest and UI warnings
+NFR-03,decision-support disclaimer,web UI and API response

@@ -1,0 +1,4 @@
+model,accuracy,precision_phishing,recall_phishing,f1_phishing,false_positive_rate,tn,fp,fn,tp,model_type
+Rules baseline,0.7164,0.8,0.5882,0.678,0.1515,56,10,28,40,handwritten cue rules
+TF-IDF + Logistic Regression,1.0,1.0,1.0,1.0,0.0,66,0,0,68,linear TF-IDF classifier
+TF-IDF + Random Forest,0.9776,0.9577,1.0,0.9784,0.0455,63,3,0,68,third model comparison

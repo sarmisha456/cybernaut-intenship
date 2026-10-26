@@ -1,0 +1,439 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Spam Classifier Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f6fc;
+            color: #1e293b;
+        }
+
+        header {
+            background: #233876;
+            color: white;
+            padding: 24px 6%;
+        }
+
+        header h1 { margin: 0 0 8px; }
+        header p { margin: 0; color: #dbeafe; }
+
+        main {
+            max-width: 1150px;
+            margin: 28px auto;
+            padding: 0 18px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 3px 14px #1725540d;
+            margin-bottom: 22px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            font: inherit;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 14px;
+            padding: 12px 22px;
+            border: none;
+            border-radius: 8px;
+            background: #3155b7;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:disabled { opacity: 0.6; cursor: wait; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .metric {
+            background: white;
+            padding: 22px;
+            border-radius: 14px;
+            box-shadow: 0 3px 14px #1725540d;
+        }
+
+        .metric h3 {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 0;
+        }
+
+        .metric p {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .charts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .chart-box {
+            min-width: 0;
+            height: 300px;
+        }
+
+        .status {
+            padding: 14px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .spam {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .safe {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fff1f2;
+            color: #be123c;
+        }
+
+        .history-list {
+            padding-left: 20px;
+            line-height: 1.8;
+            overflow-wrap: anywhere;
+        }
+
+        .muted { color: #64748b; }
+
+        footer {
+            text-align: center;
+            color: #64748b;
+            padding: 20px;
+        }
+
+        @media (max-width: 700px) {
+            .grid, .charts { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>Email Spam Classifier</h1>
+    <p>Machine Learning Prediction and Analytics Dashboard</p>
+</header>
+
+<main>
+    <section class="card">
+        <h2>Check Your Email Message</h2>
+        <p class="muted">
+            Enter an email or message to classify it as Spam or Not Spam.
+        </p>
+
+        <textarea id="message"
+            maxlength="10000"
+            placeholder="Paste your email message here..."></textarea>
+
+        <p class="muted" id="charCount">0 / 10000 characters</p>
+
+        <button id="checkBtn" onclick="checkMessage()">
+            Check Message
+        </button>
+
+        <div id="status" class="status" role="status"></div>
+    </section>
+
+    <section class="grid">
+        <div class="metric">
+            <h3>Prediction Result</h3>
+            <p id="result">--</p>
+        </div>
+
+        <div class="metric">
+            <h3>Model Confidence</h3>
+            <p id="confidence">--</p>
+        </div>
+
+        <div class="metric">
+            <h3>Messages Tested</h3>
+            <p id="total">0</p>
+        </div>
+    </section>
+
+    <section class="charts" style="margin-top:22px">
+        <div class="card">
+            <h2>Current Message Analysis</h2>
+            <p class="muted">Spam probability vs Not Spam probability</p>
+            <div class="chart-box">
+                <canvas id="probabilityChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Prediction Confidence</h2>
+            <p class="muted">Probability of each class for the current message</p>
+            <div class="chart-box">
+                <canvas id="confidenceChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Prediction History</h2>
+        <p class="muted">
+            Counts of Spam and Not Spam messages tested during this session.
+        </p>
+        <div class="chart-box">
+            <canvas id="historyChart"></canvas>
+        </div>
+        <h3>Recent Messages</h3>
+        <ol id="historyList" class="history-list">
+            <li>No messages tested yet.</li>
+        </ol>
+        <button onclick="clearHistory()">Clear History</button>
+    </section>
+</main>
+
+<footer>Email Spam Classifier | Machine Learning Project</footer>
+
+<script>
+    const messageBox = document.getElementById("message");
+    const statusBox = document.getElementById("status");
+    const checkBtn = document.getElementById("checkBtn");
+
+    let total = 0;
+    let spamCount = 0;
+    let safeCount = 0;
+    let history = [];
+
+    messageBox.addEventListener("input", () => {
+        document.getElementById("charCount").textContent =
+            `${messageBox.value.length} / 10000 characters`;
+    });
+
+    const probabilityChart = new Chart(
+        document.getElementById("probabilityChart"),
+        {
+            type: "doughnut",
+            data: {
+                labels: ["Spam", "Not Spam"],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ["#ef4444", "#22c55e"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: "bottom" } }
+            }
+        }
+    );
+
+    const confidenceChart = new Chart(
+        document.getElementById("confidenceChart"),
+        {
+            type: "bar",
+            data: {
+                labels: ["Spam", "Not Spam"],
+                datasets: [{
+                    label: "Probability (%)",
+                    data: [0, 0],
+                    backgroundColor: ["#ef4444", "#22c55e"]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: "y",
+                scales: {
+                    x: {
+                        min: 0,
+                        max: 100,
+                        title: { display: true, text: "Probability (%)" }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        }
+    );
+
+    const historyChart = new Chart(
+        document.getElementById("historyChart"),
+        {
+            type: "bar",
+            data: {
+                labels: ["Spam", "Not Spam"],
+                datasets: [{
+                    label: "Number of messages",
+                    data: [0, 0],
+                    backgroundColor: ["#ef4444", "#22c55e"]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                plugins: { legend: { display: false } }
+            }
+        }
+    );
+
+    async function checkMessage() {
+        const message = messageBox.value.trim();
+
+        if (!message) {
+            showStatus("Please enter an email message.", "error");
+            return;
+        }
+
+        checkBtn.disabled = true;
+        checkBtn.textContent = "Checking...";
+
+        try {
+            const response = await fetch("/api/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Prediction failed.");
+            }
+
+            document.getElementById("result").textContent = data.label;
+            document.getElementById("confidence").textContent =
+                `${data.confidence}%`;
+
+            showStatus(
+                `${data.label} detected — model confidence: ${data.confidence}%`,
+                data.is_spam ? "spam" : "safe"
+            );
+
+            probabilityChart.data.datasets[0].data = [
+                data.spam_probability,
+                data.not_spam_probability
+            ];
+            probabilityChart.update();
+
+            confidenceChart.data.datasets[0].data = [
+                data.spam_probability,
+                data.not_spam_probability
+            ];
+            confidenceChart.update();
+
+            total++;
+            if (data.is_spam) {
+                spamCount++;
+            } else {
+                safeCount++;
+            }
+
+            history.unshift({
+                message: message,
+                label: data.label,
+                confidence: data.confidence
+            });
+            history = history.slice(0, 10);
+
+            document.getElementById("total").textContent = total;
+
+            historyChart.data.datasets[0].data = [
+                spamCount, safeCount
+            ];
+            historyChart.update();
+
+            renderHistory();
+
+        } catch (error) {
+            showStatus(error.message, "error");
+        } finally {
+            checkBtn.disabled = false;
+            checkBtn.textContent = "Check Message";
+        }
+    }
+
+    function showStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = `status ${type}`;
+        statusBox.style.display = "block";
+    }
+
+    function renderHistory() {
+        const list = document.getElementById("historyList");
+        list.replaceChildren();
+
+        if (history.length === 0) {
+            const item = document.createElement("li");
+            item.textContent = "No messages tested yet.";
+            list.appendChild(item);
+            return;
+        }
+
+        history.forEach(item => {
+            const li = document.createElement("li");
+            const preview = item.message.length > 90
+                ? item.message.slice(0, 90) + "..."
+                : item.message;
+
+            li.textContent =
+                `${preview} — ${item.label} (${item.confidence}%)`;
+            list.appendChild(li);
+        });
+    }
+
+    function clearHistory() {
+        total = 0;
+        spamCount = 0;
+        safeCount = 0;
+        history = [];
+
+        document.getElementById("total").textContent = "0";
+        document.getElementById("result").textContent = "--";
+        document.getElementById("confidence").textContent = "--";
+
+        probabilityChart.data.datasets[0].data = [0, 0];
+        probabilityChart.update();
+
+        confidenceChart.data.datasets[0].data = [0, 0];
+        confidenceChart.update();
+
+        historyChart.data.datasets[0].data = [0, 0];
+        historyChart.update();
+
+        statusBox.style.display = "none";
+        renderHistory();
+    }
+</script>
+</body>
+</html>

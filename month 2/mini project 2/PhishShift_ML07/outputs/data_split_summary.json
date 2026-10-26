@@ -1,0 +1,29 @@
+{
+  "raw_records": 720,
+  "after_deduplication": 659,
+  "duplicates_removed": 61,
+  "train_records": 525,
+  "test_records": 134,
+  "train_campaigns": [
+    "CAMP-02",
+    "CAMP-03",
+    "CAMP-04",
+    "CAMP-05",
+    "CAMP-06",
+    "CAMP-07",
+    "CAMP-08",
+    "CAMP-09",
+    "CAMP-12"
+  ],
+  "test_campaigns": [
+    "CAMP-01",
+    "CAMP-10",
+    "CAMP-11"
+  ],
+  "campaign_overlap": [],
+  "label_distribution": {
+    "phishing": 333,
+    "benign": 326
+  },
+  "dataset_note": "All examples are locally authored synthetic training messages; no real inbox data or active URLs."
+}

@@ -1,0 +1,323 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhishShift ML-07 | Phishing Detector</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px;
+      font-family: Arial, sans-serif;
+      background: #0b1120; color: #f1f5f9;
+    }
+    .container { max-width: 1200px; margin: auto; }
+    header { margin-bottom: 24px; }
+    h1 { color: #60a5fa; }
+    .muted, .notice { color: #aab8cc; line-height: 1.6; }
+    .cards, .layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-bottom: 22px;
+    }
+    .card, .panel {
+      background: #151f32;
+      border: 1px solid #29364c;
+      border-radius: 12px;
+      padding: 20px;
+      min-width: 0;
+    }
+    .card p { color: #aab8cc; margin-top: 0; }
+    .number { font-size: 30px; font-weight: bold; }
+    textarea {
+      width: 100%; min-height: 180px;
+      padding: 14px; border-radius: 8px;
+      border: 1px solid #43516a;
+      background: #0b1120; color: white;
+      font: inherit; resize: vertical;
+    }
+    button {
+      background: #3b82f6; color: white;
+      border: 0; border-radius: 8px;
+      padding: 12px 20px; margin-top: 12px;
+      font-weight: bold; cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    .result { font-size: 23px; font-weight: bold; }
+    .chart-box { height: 280px; position: relative; }
+    .scroll { overflow-x: auto; }
+    table { width: 100%; min-width: 560px; border-collapse: collapse; }
+    th, td {
+      text-align: left; padding: 12px;
+      border-bottom: 1px solid #29364c;
+    }
+    th { color: #93c5fd; }
+    .notice { font-size: 13px; }
+    .status { color: #93c5fd; }
+    @media(max-width:600px) {
+      body { padding: 12px; }
+      .panel, .card { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>PhishShift ML-07</h1>
+    <p class="muted">Machine Learning Based Phishing Message Detection</p>
+  </header>
+
+  <section class="cards">
+    <div class="card"><p>Total Scans</p><div class="number" id="totalScans">0</div></div>
+    <div class="card"><p>High-Risk Messages</p><div class="number" id="highRisk">0</div></div>
+    <div class="card"><p>Lower-Risk Messages</p><div class="number" id="lowerRisk">0</div></div>
+    <div class="card"><p>Manual Reviews</p><div class="number" id="manualReview">0</div></div>
+  </section>
+
+  <section class="layout">
+    <div class="panel">
+      <h2>Message Scanner</h2>
+      <p class="muted">Paste a message below to estimate its phishing risk.</p>
+      <textarea id="messageInput" maxlength="10000" placeholder="Paste message here..."></textarea>
+      <button id="scanButton" onclick="scanMessage()">Scan Message</button>
+      <p id="status" class="status">Ready to scan.</p>
+      <p class="notice">Do not enter passwords or confidential information. Results are estimates, not guarantees.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Latest Prediction</h2>
+      <div id="prediction" class="result">Waiting for scan</div>
+      <p>Estimated phishing risk: <strong id="riskPercent">—</strong></p>
+      <p id="riskDecision" class="muted">Scan a message to see its result.</p>
+      <div class="chart-box"><canvas id="riskChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="layout">
+    <div class="panel">
+      <h2>Scan Results Overview</h2>
+      <div class="chart-box"><canvas id="summaryChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h2>Model Performance & Latest Scan Risk</h2>
+      <p class="muted">Test accuracy values stay fixed. The orange bar updates with each scan.</p>
+      <div class="chart-box"><canvas id="modelChart"></canvas></div>
+      <p id="modelRiskText" class="notice">Latest message risk: not scanned yet.</p>
+      <p class="notice">Test scores use synthetic test data and do not guarantee real-world performance.</p>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-bottom:22px">
+    <h2>Live Scan Analytics</h2>
+    <p class="muted">Shows estimated risk for the latest 10 scans.</p>
+    <div class="chart-box"><canvas id="liveRiskChart"></canvas></div>
+  </section>
+
+  <section class="panel" style="margin-bottom:22px">
+    <h2>Why Was This Message Flagged?</h2>
+    <div id="riskCues" class="muted">Scan a message to see detected cues.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Scan History</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Time</th><th>Category</th><th>Risk</th><th>Message Preview</th></tr></thead>
+        <tbody id="historyBody"><tr><td colspan="4">No scans yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  Chart.defaults.color = "#dbeafe";
+  Chart.defaults.borderColor = "#29364c";
+
+  const riskChart = new Chart($("riskChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Estimated phishing risk", "Remaining percentage"],
+      datasets: [{
+        data: [0, 100],
+        backgroundColor: ["#f97316", "#334155"]
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  const summaryChart = new Chart($("summaryChart"), {
+    type: "bar",
+    data: {
+      labels: ["High Risk", "Lower Risk", "Manual Review"],
+      datasets: [{
+        label: "Number of scans",
+        data: [0, 0, 0],
+        backgroundColor: ["#f97316", "#22c55e", "#eab308"]
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+
+  const modelChart = new Chart($("modelChart"), {
+    type: "bar",
+    data: {
+      labels: [
+        "Rules baseline accuracy",
+        "TF-IDF Logistic accuracy",
+        "Random Forest accuracy",
+        "Latest message risk"
+      ],
+      datasets: [{
+        label: "Percentage (%)",
+        data: [71.64, 100, 97.76, 0],
+        backgroundColor: ["#64748b", "#3b82f6", "#8b5cf6", "#f97316"]
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { min: 0, max: 100 } }
+    }
+  });
+
+  const liveRiskChart = new Chart($("liveRiskChart"), {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Estimated phishing risk (%)",
+        data: [],
+        borderColor: "#fb923c",
+        backgroundColor: "rgba(251,146,60,0.15)",
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { min: 0, max: 100 } }
+    }
+  });
+
+  async function refreshDashboard() {
+    const response = await fetch("/api/dashboard");
+    if (!response.ok) throw new Error("Dashboard data could not load");
+    const data = await response.json();
+
+    $("totalScans").textContent = data.total_scans ?? 0;
+    $("highRisk").textContent = data.phishing_count ?? 0;
+    $("lowerRisk").textContent = data.lower_risk_count ?? 0;
+    $("manualReview").textContent = data.manual_review_count ?? 0;
+
+    summaryChart.data.datasets[0].data = [
+      data.phishing_count ?? 0,
+      data.lower_risk_count ?? 0,
+      data.manual_review_count ?? 0
+    ];
+    summaryChart.update();
+
+    const history = data.history ?? [];
+    $("historyBody").replaceChildren();
+
+    if (!history.length) {
+      const row = $("historyBody").insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 4;
+      cell.textContent = "No scans yet.";
+    } else {
+      history.slice().reverse().forEach(item => {
+        const row = $("historyBody").insertRow();
+        const time = item.time ?? item.timestamp ?? "—";
+        const category = item.category ?? "—";
+        const risk = item.risk_percent == null ? "—" : item.risk_percent + "%";
+        const preview = item.message ?? item.message_preview ?? "";
+        [time, category, risk, preview].forEach(value => {
+          const cell = row.insertCell();
+          cell.textContent = String(value).slice(0, 160);
+        });
+      });
+    }
+  }
+
+  async function scanMessage() {
+    const message = $("messageInput").value.trim();
+    const button = $("scanButton");
+    const status = $("status");
+
+    if (!message) {
+      status.textContent = "Please type a message before scanning.";
+      return;
+    }
+
+    button.disabled = true;
+    status.textContent = "Scanning message...";
+
+    try {
+      const response = await fetch("/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Scan failed");
+
+      const risk = Number(result.risk_percent);
+      if (!Number.isFinite(risk)) throw new Error("Server returned an invalid risk value");
+
+      $("prediction").textContent = result.category ?? result.decision ?? "Scanned";
+      $("riskPercent").textContent = risk + "%";
+      $("riskDecision").textContent = result.decision ?? "";
+      status.textContent = "Scan completed successfully.";
+
+      riskChart.data.datasets[0].data = [risk, 100 - risk];
+      riskChart.update();
+
+      // Update the latest message risk bar, without changing test accuracy.
+      modelChart.data.datasets[0].data[3] = risk;
+      modelChart.update();
+      $("modelRiskText").textContent = "Latest message estimated risk: " + risk + "%";
+
+      liveRiskChart.data.labels.push(new Date().toLocaleTimeString());
+      liveRiskChart.data.datasets[0].data.push(risk);
+      if (liveRiskChart.data.labels.length > 10) {
+        liveRiskChart.data.labels.shift();
+        liveRiskChart.data.datasets[0].data.shift();
+      }
+      liveRiskChart.update();
+
+      const cueBox = $("riskCues");
+      cueBox.replaceChildren();
+      (result.risk_cues ?? []).forEach(item => {
+        const p = document.createElement("p");
+        p.textContent = item.cue + ": " + item.evidence;
+        cueBox.appendChild(p);
+      });
+
+      const notice = document.createElement("p");
+      notice.className = "notice";
+      notice.textContent = result.notice ?? "This is a model estimate, not a guarantee.";
+      cueBox.appendChild(notice);
+
+      await refreshDashboard();
+    } catch (error) {
+      status.textContent = "Error: " + error.message +
+        ". Check app.py and the terminal for errors.";
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  refreshDashboard().catch(error => {
+    $("status").textContent = "Dashboard loading error: " + error.message;
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "Rules baseline": {
+    "accuracy": 0.7164,
+    "precision_phishing": 0.8,
+    "recall_phishing": 0.5882,
+    "f1_phishing": 0.678,
+    "false_positive_rate": 0.1515,
+    "tn": 56,
+    "fp": 10,
+    "fn": 28,
+    "tp": 40,
+    "model_type": "handwritten cue rules"
+  },
+  "TF-IDF + Logistic Regression": {
+    "accuracy": 1.0,
+    "precision_phishing": 1.0,
+    "recall_phishing": 1.0,
+    "f1_phishing": 1.0,
+    "false_positive_rate": 0.0,
+    "tn": 66,
+    "fp": 0,
+    "fn": 0,
+    "tp": 68,
+    "model_type": "linear TF-IDF classifier"
+  },
+  "TF-IDF + Random Forest": {
+    "accuracy": 0.9776,
+    "precision_phishing": 0.9577,
+    "recall_phishing": 1.0,
+    "f1_phishing": 0.9784,
+    "false_positive_rate": 0.0455,
+    "tn": 63,
+    "fp": 3,
+    "fn": 0,
+    "tp": 68,
+    "model_type": "third model comparison"
+  }
+}

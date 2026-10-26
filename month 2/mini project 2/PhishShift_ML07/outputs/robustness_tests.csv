@@ -1,0 +1,34 @@
+case,variant,expected_label,text,phishing_probability,decision
+AT-01,1,benign,Urgent: please reset your password using the official company portal you normally visit.,0.1986,benign
+AT-01,2,benign,Urgent: please reset your password using the official company portal you normally visit.,0.1986,benign
+AT-01,3,benign,Urgent — please reset your password using the official company portal you normally visit.,0.1986,benign
+AT-02,1,phishing,A quick note from support: your mailbox access needs attention; share your login details to keep it active.,0.8813,phishing
+AT-02,2,phishing,A quick note from support: your mailbox access needs attention; share your login details to keep it active.,0.8813,phishing
+AT-02,3,phishing,A quick note from support — your mailbox access needs attention; share your login details to keep it active.,0.8813,phishing
+AT-03,1,phishing,"SECURITY alert!!! verify-account now (shortened link is represented as [dot] and [slash], never opened).",0.7989,phishing
+AT-03,2,phishing,"SECURITY alert... verify-account now (shortened link is represented as [dot] and [slash], never opened).",0.7989,phishing
+AT-03,3,phishing,"SECURITY alert!!! verify-account now (shortened link is represented as [dot] and [slash], never opened).",0.7989,phishing
+CP-5-1,1,benign,Action needed today: please submit your timesheet through the normal employee portal.,0.2492,benign
+CP-5-1,2,benign,Action needed today: please submit your timesheet through the normal employee portal.,0.2492,benign
+CP-5-1,3,benign,Action needed today — please submit your timesheet through the normal employee portal.,0.2492,benign
+CP-5-2,1,phishing,Your work access may pause; send the one-time code to the sender right away.,0.7456,phishing
+CP-5-2,2,phishing,Your work access may pause; send the one-time code to the sender right away.,0.7456,phishing
+CP-5-2,3,phishing,Your work access may pause; send the one-time code to the sender right away.,0.7456,phishing
+CP-5-3,1,benign,Urgent payroll reminder: payslips are available in the established HR portal.,0.1457,benign
+CP-5-3,2,benign,Urgent payroll reminder: payslips are available in the established HR portal.,0.1457,benign
+CP-5-3,3,benign,Urgent payroll reminder — payslips are available in the established HR portal.,0.1457,benign
+CP-5-4,1,phishing,A refund is waiting; enter banking information using the message link.,0.8198,phishing
+CP-5-4,2,phishing,A refund is waiting; enter banking information using the message link.,0.8198,phishing
+CP-5-4,3,phishing,A refund is waiting; enter banking information using the message link.,0.8198,phishing
+CP-5-5,1,benign,The helpdesk will perform maintenance at 7 PM. No response is required.,0.1547,benign
+CP-5-5,2,benign,The helpdesk will perform maintenance at 7 PM. No response is required.,0.1547,benign
+CP-5-5,3,benign,The helpdesk will perform maintenance at 7 PM. No response is required.,0.1547,benign
+CP-5-6,1,phishing,Please validate your identity through the unfamiliar shortened link today.,0.7911,phishing
+CP-5-6,2,phishing,Please validate your identity through the unfamiliar shortened link today.,0.7911,phishing
+CP-5-6,3,phishing,Please validate your identity through the unfamiliar shortened link today.,0.7911,phishing
+CP-5-7,1,benign,Please review the meeting agenda before the 4 PM discussion.,0.108,benign
+CP-5-7,2,benign,Please review the meeting agenda before the 4 PM discussion.,0.108,benign
+CP-5-7,3,benign,Please review the meeting agenda before the 4 PM discussion.,0.108,benign
+CP-5-8,1,phishing,Do not contact anyone else; provide your password to prevent a lockout.,0.8156,phishing
+CP-5-8,2,phishing,Do not contact anyone else; provide your password to prevent a lockout.,0.8156,phishing
+CP-5-8,3,phishing,Do not contact anyone else; provide your password to prevent a lockout.,0.8156,phishing
